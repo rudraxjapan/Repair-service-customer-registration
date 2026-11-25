@@ -1,0 +1,187 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Hardened global primitive helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isAdmin() {
+      return isVerifiedUser() &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    function isOwner(uid) {
+      return isVerifiedUser() && request.auth.uid == uid;
+    }
+
+    // Customer validation blueprint
+    function isValidCustomer(data, customerId) {
+      return data.keys().hasAll([
+          'uid', 'fullName', 'mobileNumber', 'email',
+          'address', 'city', 'pinCode', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'uid', 'fullName', 'mobileNumber', 'email',
+          'address', 'city', 'pinCode', 'createdAt', 'updatedAt'
+        ]) &&
+        data.uid is string && data.uid == customerId && isValidId(data.uid) &&
+        data.fullName is string && data.fullName.size() >= 2 && data.fullName.size() <= 100 &&
+        data.mobileNumber is string && data.mobileNumber.size() == 10 &&
+        data.mobileNumber.matches('^[0-9]{10}$') &&
+        data.email is string && data.email.size() >= 5 && data.email.size() <= 150 &&
+        data.email.matches('^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$') &&
+        data.address is string && data.address.size() >= 5 && data.address.size() <= 300 &&
+        data.city is string && data.city.size() >= 2 && data.city.size() <= 80 &&
+        data.city.matches('^[a-zA-Z\\s.\\-\']{2,80}$') &&
+        data.pinCode is string && data.pinCode.size() == 6 &&
+        data.pinCode.matches('^[0-9]{6}$') &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidServiceCategory(cat) {
+      return cat in ['Mobile', 'Laptop', 'Computer', 'Television', 'Refrigerator', 'Washing Machine', 'Other'];
+    }
+
+    function isValidServiceType(sType) {
+      return sType in ['Home Service', 'Service Center'];
+    }
+
+    function isValidRepairStatus(st) {
+      return st in ['Pending', 'Accepted', 'In Progress', 'Completed', 'Cancelled'];
+    }
+
+    // RepairRequest validation blueprint
+    function isValidRepairRequest(data, reqId) {
+      return data.keys().hasAll([
+          'requestId', 'customerId', 'customerName', 'customerMobile',
+          'serviceCategory', 'deviceBrand', 'deviceModel', 'problemDescription',
+          'preferredDate', 'serviceType', 'status', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'requestId', 'customerId', 'customerName', 'customerMobile',
+          'serviceCategory', 'deviceBrand', 'deviceModel', 'problemDescription',
+          'preferredDate', 'serviceType', 'status', 'adminNotes', 'createdAt', 'updatedAt'
+        ]) &&
+        data.requestId is string && data.requestId == reqId &&
+        data.requestId.size() >= 4 && data.requestId.size() <= 64 &&
+        data.requestId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.customerId is string && isValidId(data.customerId) &&
+        data.customerName is string && data.customerName.size() >= 2 && data.customerName.size() <= 100 &&
+        data.customerMobile is string && data.customerMobile.size() == 10 &&
+        data.customerMobile.matches('^[0-9]{10}$') &&
+        data.serviceCategory is string && isValidServiceCategory(data.serviceCategory) &&
+        data.deviceBrand is string && data.deviceBrand.size() >= 1 && data.deviceBrand.size() <= 60 &&
+        data.deviceModel is string && data.deviceModel.size() >= 1 && data.deviceModel.size() <= 80 &&
+        data.problemDescription is string && data.problemDescription.size() >= 10 && data.problemDescription.size() <= 1000 &&
+        data.preferredDate is string && data.preferredDate.size() >= 8 && data.preferredDate.size() <= 20 &&
+        data.preferredDate.matches('^\\d{4}-\\d{2}-\\d{2}$') &&
+        data.serviceType is string && isValidServiceType(data.serviceType) &&
+        data.status is string && isValidRepairStatus(data.status) &&
+        (!('adminNotes' in data) || (data.adminNotes is string && data.adminNotes.size() <= 500)) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // Customers Collection: Strict PII isolation
+    match /customers/{customerId} {
+      allow get: if isValidId(customerId) && (isOwner(customerId) || isAdmin());
+      allow list: if isAdmin();
+
+      allow create: if isValidId(customerId) &&
+        isOwner(customerId) &&
+        isValidCustomer(incoming(), customerId) &&
+        incoming().uid == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isValidId(customerId) &&
+        isValidCustomer(incoming(), customerId) &&
+        incoming().uid == existing().uid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        (
+          (
+            isOwner(customerId) &&
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'fullName', 'mobileNumber', 'email', 'address', 'city', 'pinCode', 'updatedAt'
+            ])
+          ) ||
+          isAdmin()
+        );
+
+      allow delete: if false;
+    }
+
+    // Repair Requests Collection
+    match /repairRequests/{requestId} {
+      allow get: if isValidId(requestId) && (
+        isAdmin() ||
+        (isVerifiedUser() && existing().customerId == request.auth.uid)
+      );
+
+      allow list: if isVerifiedUser() && (
+        existing().customerId == request.auth.uid ||
+        isAdmin()
+      );
+
+      allow create: if isValidId(requestId) &&
+        isVerifiedUser() &&
+        isValidRepairRequest(incoming(), requestId) &&
+        incoming().customerId == request.auth.uid &&
+        incoming().status == 'Pending' &&
+        !('adminNotes' in incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        exists(/databases/$(database)/documents/customers/$(request.auth.uid));
+
+      allow update: if isValidId(requestId) &&
+        isValidRepairRequest(incoming(), requestId) &&
+        incoming().requestId == existing().requestId &&
+        incoming().customerId == existing().customerId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        (
+          isAdmin() ||
+          (
+            isVerifiedUser() &&
+            existing().customerId == request.auth.uid &&
+            existing().status == 'Pending' &&
+            incoming().status == 'Cancelled' &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
+          )
+        );
+
+      allow delete: if false;
+    }
+
+    // Admins Registry Collection: Read-only for self-check, no client writes
+    match /admins/{adminId} {
+      allow get: if isValidId(adminId) && isOwner(adminId);
+      allow list: if false;
+      allow create, update, delete: if false;
+    }
+  }
+}

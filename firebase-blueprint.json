@@ -1,0 +1,260 @@
+{
+  "entities": {
+    "Customer": {
+      "title": "Customer",
+      "description": "Registered customer profile with contact and address information.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase Auth UID matching the document ID.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "fullName": {
+          "type": "string",
+          "description": "Customer full legal name.",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "mobileNumber": {
+          "type": "string",
+          "description": "Customer 10-digit mobile phone number.",
+          "minLength": 10,
+          "maxLength": 10,
+          "pattern": "^[0-9]{10}$"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Customer email address.",
+          "minLength": 5,
+          "maxLength": 150,
+          "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"
+        },
+        "address": {
+          "type": "string",
+          "description": "Complete street and building address.",
+          "minLength": 5,
+          "maxLength": 300
+        },
+        "city": {
+          "type": "string",
+          "description": "Customer city (letters only, no numbers).",
+          "minLength": 2,
+          "maxLength": 80,
+          "pattern": "^[a-zA-Z\\s.\\-']{2,80}$"
+        },
+        "pinCode": {
+          "type": "string",
+          "description": "6-digit numeric Postal / PIN code.",
+          "minLength": 6,
+          "maxLength": 6,
+          "pattern": "^[0-9]{6}$"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when customer registered."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last profile update."
+        }
+      },
+      "required": [
+        "uid",
+        "fullName",
+        "mobileNumber",
+        "email",
+        "address",
+        "city",
+        "pinCode",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "RepairRequest": {
+      "title": "RepairRequest",
+      "description": "Customer repair service ticket submitted for device servicing.",
+      "type": "object",
+      "properties": {
+        "requestId": {
+          "type": "string",
+          "description": "Unique repair request identifier matching the document ID.",
+          "minLength": 4,
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "customerId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the customer who submitted the request.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "customerName": {
+          "type": "string",
+          "description": "Customer full name at submission time.",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "customerMobile": {
+          "type": "string",
+          "description": "Customer 10-digit mobile number at submission time.",
+          "minLength": 10,
+          "maxLength": 10,
+          "pattern": "^[0-9]{10}$"
+        },
+        "serviceCategory": {
+          "type": "string",
+          "description": "Category of the device requiring repair.",
+          "enum": [
+            "Mobile",
+            "Laptop",
+            "Computer",
+            "Television",
+            "Refrigerator",
+            "Washing Machine",
+            "Other"
+          ]
+        },
+        "deviceBrand": {
+          "type": "string",
+          "description": "Manufacturer brand of the device.",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "deviceModel": {
+          "type": "string",
+          "description": "Specific model name or number of the device.",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "problemDescription": {
+          "type": "string",
+          "description": "Detailed description of the malfunction or issue.",
+          "minLength": 10,
+          "maxLength": 1000
+        },
+        "preferredDate": {
+          "type": "string",
+          "description": "Preferred repair appointment date (YYYY-MM-DD).",
+          "minLength": 8,
+          "maxLength": 20,
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "serviceType": {
+          "type": "string",
+          "description": "Requested service fulfillment method.",
+          "enum": [
+            "Home Service",
+            "Service Center"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "description": "Current lifecycle status of the repair request.",
+          "enum": [
+            "Pending",
+            "Accepted",
+            "In Progress",
+            "Completed",
+            "Cancelled"
+          ]
+        },
+        "adminNotes": {
+          "type": "string",
+          "description": "Optional technician or administrator update notes.",
+          "maxLength": 500
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when request was submitted."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last status or detail update."
+        }
+      },
+      "required": [
+        "requestId",
+        "customerId",
+        "customerName",
+        "customerMobile",
+        "serviceCategory",
+        "deviceBrand",
+        "deviceModel",
+        "problemDescription",
+        "preferredDate",
+        "serviceType",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "AdminUser": {
+      "title": "AdminUser",
+      "description": "Authorized administrator registry record.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Administrator Firebase Auth UID.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Administrator email.",
+          "minLength": 5,
+          "maxLength": 150
+        },
+        "role": {
+          "type": "string",
+          "description": "Admin role marker.",
+          "enum": [
+            "admin"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation server timestamp."
+        }
+      },
+      "required": [
+        "uid",
+        "email",
+        "role",
+        "createdAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/customers/{customerId}": {
+      "schema": {
+        "$ref": "#/entities/Customer"
+      },
+      "description": "Customer registration profiles keyed by Firebase Auth UID. Private PII accessible only to the owning customer or administrators."
+    },
+    "/repairRequests/{requestId}": {
+      "schema": {
+        "$ref": "#/entities/RepairRequest"
+      },
+      "description": "Repair service requests submitted by registered customers. Customers can create and view their own requests; administrators can view all requests and update statuses."
+    },
+    "/admins/{adminId}": {
+      "schema": {
+        "$ref": "#/entities/AdminUser"
+      },
+      "description": "Authorized administrator UIDs. Read-only for signed-in users checking their own admin record; write-protected."
+    }
+  }
+}

@@ -1,0 +1,25 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+
+# Android Studio & Gradle artifacts
+*.iml
+.gradle/
+**/.gradle/
+**/.idea/
+**/local.properties
+**/app/build/
+**/captures/
+
+# Firebase client configs (keep out of public repositories)
+**/google-services.json
+firebase-applet-config.json
+
+# Generated personal academic report PDF
+public/Calibre_Repair_Project_Report_*.pdf
+

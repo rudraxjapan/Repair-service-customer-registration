@@ -1,0 +1,8 @@
+{
+  "name": "Calibre Repair — Repair Service Management System",
+  "description": "Modern repair service management platform with customer registration, repair request submission, real-time Firebase synchronization, administrator console, and complete Android Studio Kotlin Jetpack Compose project.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
